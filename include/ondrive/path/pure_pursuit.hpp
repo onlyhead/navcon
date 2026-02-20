@@ -1,13 +1,13 @@
 #pragma once
 
-#include "drivekit/controller.hpp"
-#include "drivekit/types.hpp"
+#include "ondrive/controller.hpp"
+#include "ondrive/types.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <optional>
 
-namespace drivekit {
+namespace ondrive {
     namespace path {
 
         /// Pure Pursuit controller for smooth path following.
@@ -48,7 +48,7 @@ namespace drivekit {
 
                 // Get target point using lookahead algorithm
                 Point target_point;
-                bool has_path = !path_.drivekits.empty();
+                bool has_path = !path_.ondrives.empty();
                 double progress_distance = wheelbase * 1.5;
 
                 if (has_path) {
@@ -155,24 +155,24 @@ namespace drivekit {
             inline std::optional<Point> find_lookahead_point(const Point &rear_axle, double current_yaw,
                                                              double lookahead_distance, double progress_distance) {
                 (void)current_yaw;
-                if (path_.drivekits.empty()) return std::nullopt;
+                if (path_.ondrives.empty()) return std::nullopt;
 
-                // Update path index: advance when we've passed drivekits
-                while (path_index_ < path_.drivekits.size() - 1) {
-                    Point current_drivekit = path_.drivekits[path_index_].point;
-                    Point next_drivekit = path_.drivekits[path_index_ + 1].point;
+                // Update path index: advance when we've passed ondrives
+                while (path_index_ < path_.ondrives.size() - 1) {
+                    Point current_ondrive = path_.ondrives[path_index_].point;
+                    Point next_ondrive = path_.ondrives[path_index_ + 1].point;
 
-                    double dist_to_current = rear_axle.distance_to(current_drivekit);
+                    double dist_to_current = rear_axle.distance_to(current_ondrive);
 
-                    // Vector from robot to current drivekit
-                    double dx_to_current = current_drivekit.x - rear_axle.x;
-                    double dy_to_current = current_drivekit.y - rear_axle.y;
+                    // Vector from robot to current ondrive
+                    double dx_to_current = current_ondrive.x - rear_axle.x;
+                    double dy_to_current = current_ondrive.y - rear_axle.y;
 
-                    // Vector from current to next drivekit (path direction)
-                    double dx_path = next_drivekit.x - current_drivekit.x;
-                    double dy_path = next_drivekit.y - current_drivekit.y;
+                    // Vector from current to next ondrive (path direction)
+                    double dx_path = next_ondrive.x - current_ondrive.x;
+                    double dy_path = next_ondrive.y - current_ondrive.y;
 
-                    // Dot product: negative means we've passed the drivekit
+                    // Dot product: negative means we've passed the ondrive
                     double dot_product = dx_to_current * dx_path + dy_to_current * dy_path;
 
                     if (dist_to_current < progress_distance || dot_product < 0) {
@@ -186,22 +186,22 @@ namespace drivekit {
                 double min_dist_diff = std::numeric_limits<double>::max();
                 std::optional<Point> best_point;
 
-                for (size_t i = path_index_; i < path_.drivekits.size(); ++i) {
-                    Point drivekit = path_.drivekits[i].point;
-                    double dist = rear_axle.distance_to(drivekit);
+                for (size_t i = path_index_; i < path_.ondrives.size(); ++i) {
+                    Point ondrive = path_.ondrives[i].point;
+                    double dist = rear_axle.distance_to(ondrive);
 
                     double dist_diff = std::abs(dist - lookahead_distance);
                     if (dist_diff < min_dist_diff && dist >= lookahead_distance * 0.5) {
                         min_dist_diff = dist_diff;
-                        best_point = drivekit;
+                        best_point = ondrive;
                     }
 
                     // Also check interpolated points on segments
-                    if (i < path_.drivekits.size() - 1) {
-                        Point next_drivekit = path_.drivekits[i + 1].point;
+                    if (i < path_.ondrives.size() - 1) {
+                        Point next_ondrive = path_.ondrives[i + 1].point;
 
                         auto intersection =
-                            find_circle_segment_intersection(rear_axle, lookahead_distance, drivekit, next_drivekit);
+                            find_circle_segment_intersection(rear_axle, lookahead_distance, ondrive, next_ondrive);
 
                         if (intersection.has_value()) {
                             double dist_to_intersection = rear_axle.distance_to(intersection.value());
@@ -218,8 +218,8 @@ namespace drivekit {
                     }
                 }
 
-                if (!best_point.has_value() && path_index_ < path_.drivekits.size()) {
-                    best_point = path_.drivekits.back().point;
+                if (!best_point.has_value() && path_index_ < path_.ondrives.size()) {
+                    best_point = path_.ondrives.back().point;
                 }
 
                 return best_point;
@@ -272,4 +272,4 @@ namespace drivekit {
         };
 
     } // namespace path
-} // namespace drivekit
+} // namespace ondrive

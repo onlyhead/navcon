@@ -1,9 +1,9 @@
 #pragma once
 
-#include "drivekit/controller.hpp"
+#include "ondrive/controller.hpp"
 #include <vector>
 
-namespace drivekit {
+namespace ondrive {
     namespace pred {
 
         /// TEB (Timed Elastic Band) - Trajectory optimization with time information.
@@ -63,4 +63,4 @@ namespace drivekit {
         };
 
     } // namespace pred
-} // namespace drivekit
+} // namespace ondrive

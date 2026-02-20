@@ -1,6 +1,6 @@
-#include "drivekit/pred/soc.hpp"
-#include "drivekit/types.hpp"
-#include "drivekit/utils/visualize.hpp"
+#include "ondrive/pred/soc.hpp"
+#include "ondrive/types.hpp"
+#include "ondrive/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <iostream>
@@ -10,15 +10,15 @@
 
 namespace {
     // Build a corridor path
-    drivekit::Path build_corridor_path() {
-        drivekit::Path path;
+    ondrive::Path build_corridor_path() {
+        ondrive::Path path;
         for (double x = 0.0; x <= 35.0; x += 0.5) {
-            drivekit::Pose pose;
+            ondrive::Pose pose;
             pose.point.x = x;
             pose.point.y = 0.0;
             pose.point.z = 0.0;
             pose.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
-            path.drivekits.push_back(pose);
+            path.ondrives.push_back(pose);
         }
         return path;
     }
@@ -53,13 +53,13 @@ namespace {
 } // namespace
 
 int main() {
-    auto rec = std::make_shared<rerun::RecordingStream>("drivekit_soc_demo");
+    auto rec = std::make_shared<rerun::RecordingStream>("ondrive_soc_demo");
     rec->spawn().exit_on_failure();
 
     std::cout << "=== SOC (SVG-MPPI) Demo ===" << std::endl;
 
     // Create SOC controller
-    drivekit::pred::SOCFollower::SOCConfig soc_config;
+    ondrive::pred::SOCFollower::SOCConfig soc_config;
     soc_config.horizon_steps = 20;
     soc_config.dt = 0.2;
     soc_config.num_samples = 400;
@@ -82,7 +82,7 @@ int main() {
     soc_config.kernel_bandwidth = 1.0;
     soc_config.use_covariance_adaptation = true;
 
-    auto soc_controller = std::make_unique<drivekit::pred::SOCFollower>(soc_config);
+    auto soc_controller = std::make_unique<ondrive::pred::SOCFollower>(soc_config);
 
     std::cout << "Config: samples=" << soc_config.num_samples << ", guide_samples=" << soc_config.guide_samples
               << std::endl;
@@ -92,7 +92,7 @@ int main() {
     soc_controller->set_path(path);
 
     // Visualize reference path
-    drivekit::visualize::show_path(rec, path, "world/path", rerun::Color(150, 150, 150));
+    ondrive::visualize::show_path(rec, path, "world/path", rerun::Color(150, 150, 150));
 
     // Create static obstacles (RED - don't move)
     std::vector<StaticObstacle> static_obstacles;
@@ -110,8 +110,8 @@ int main() {
     std::cout << "Dynamic obstacles: " << dynamic_obstacles.size() << " (GREEN)" << std::endl;
 
     // Robot constraints
-    drivekit::RobotConstraints constraints;
-    constraints.steering_type = drivekit::SteeringType::DIFFERENTIAL;
+    ondrive::RobotConstraints constraints;
+    constraints.steering_type = ondrive::SteeringType::DIFFERENTIAL;
     constraints.max_linear_velocity = 3.0;
     constraints.min_linear_velocity = 0.0;
     constraints.max_angular_velocity = 2.0;
@@ -121,20 +121,20 @@ int main() {
     constraints.robot_width = 0.6;
     constraints.robot_length = 0.8;
 
-    drivekit::ControllerConfig ctrl_config;
-    ctrl_config.output_units = drivekit::OutputUnits::NORMALIZED;
+    ondrive::ControllerConfig ctrl_config;
+    ctrl_config.output_units = ondrive::OutputUnits::NORMALIZED;
     ctrl_config.allow_reverse = false;
     soc_controller->set_config(ctrl_config);
 
     // Initial state
-    drivekit::RobotState robot_state;
+    ondrive::RobotState robot_state;
     robot_state.pose.point = datapod::Point{0.0, 0.0, 0.0};
     robot_state.pose.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
     robot_state.velocity.linear = 0.0;
     robot_state.velocity.angular = 0.0;
 
-    drivekit::Goal goal;
-    goal.target_pose.point = path.drivekits.back().point;
+    ondrive::Goal goal;
+    goal.target_pose.point = path.ondrives.back().point;
     goal.target_pose.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
     goal.tolerance_position = 0.5;
 
@@ -173,15 +173,15 @@ int main() {
         }
 
         // Build WorldConstraints with obstacle predictions
-        drivekit::WorldConstraints world_constraints;
+        ondrive::WorldConstraints world_constraints;
 
         // Add dynamic obstacles with predictions
         for (const auto &dyn : dynamic_obstacles) {
-            drivekit::Obstacle obs;
+            ondrive::Obstacle obs;
             obs.id = dyn.id;
             obs.radius = dyn.size / 2.0;
 
-            drivekit::Obstacle::GaussianMode mode;
+            ondrive::Obstacle::GaussianMode mode;
             mode.weight = 1.0;
             for (size_t t = 0; t <= soc_config.horizon_steps; ++t) {
                 double pred_time = t * soc_config.dt;
@@ -196,11 +196,11 @@ int main() {
 
         // Add static obstacles (zero velocity prediction)
         for (const auto &stat : static_obstacles) {
-            drivekit::Obstacle obs;
+            ondrive::Obstacle obs;
             obs.id = 1000 + stat.id;
             obs.radius = stat.size / 2.0;
 
-            drivekit::Obstacle::GaussianMode mode;
+            ondrive::Obstacle::GaussianMode mode;
             mode.weight = 1.0;
             for (size_t t = 0; t <= soc_config.horizon_steps; ++t) {
                 mode.mean_x.push_back(stat.x);
@@ -234,7 +234,7 @@ int main() {
             current_time += dt;
 
             // Visualize robot
-            drivekit::visualize::show_robot_state(rec, robot_state, "robot", rerun::Color(0, 191, 255));
+            ondrive::visualize::show_robot_state(rec, robot_state, "robot", rerun::Color(0, 191, 255));
 
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } else {

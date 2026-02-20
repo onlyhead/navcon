@@ -1,7 +1,7 @@
 #pragma once
 
-#include "drivekit/controller.hpp"
-#include "drivekit/types.hpp"
+#include "ondrive/controller.hpp"
+#include "ondrive/types.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -9,7 +9,7 @@
 #include <limits>
 #include <optional>
 
-namespace drivekit {
+namespace ondrive {
     namespace path {
 
         namespace lqr_internal {
@@ -234,7 +234,7 @@ namespace drivekit {
                 VelocityCommand cmd;
                 cmd.valid = false;
 
-                if (path_.drivekits.empty()) {
+                if (path_.ondrives.empty()) {
                     return cmd;
                 }
 
@@ -365,8 +365,8 @@ namespace drivekit {
                 double min_distance = std::numeric_limits<double>::max();
                 size_t nearest_idx = path_index_;
 
-                for (size_t i = path_index_; i < path_.drivekits.size(); ++i) {
-                    double dist = current_state.pose.point.distance_to(path_.drivekits[i].point);
+                for (size_t i = path_index_; i < path_.ondrives.size(); ++i) {
+                    double dist = current_state.pose.point.distance_to(path_.ondrives[i].point);
                     if (dist < min_distance) {
                         min_distance = dist;
                         nearest_idx = i;
@@ -377,16 +377,16 @@ namespace drivekit {
                 }
 
                 result.nearest_index = nearest_idx;
-                result.nearest_point = path_.drivekits[nearest_idx].point;
+                result.nearest_point = path_.ondrives[nearest_idx].point;
 
                 path_index_ = nearest_idx;
 
-                if (nearest_idx < path_.drivekits.size() - 1) {
-                    Point next_point = path_.drivekits[nearest_idx + 1].point;
+                if (nearest_idx < path_.ondrives.size() - 1) {
+                    Point next_point = path_.ondrives[nearest_idx + 1].point;
                     result.path_heading =
                         std::atan2(next_point.y - result.nearest_point.y, next_point.x - result.nearest_point.x);
                 } else {
-                    result.path_heading = path_.drivekits[nearest_idx].rotation.to_euler().yaw;
+                    result.path_heading = path_.ondrives[nearest_idx].rotation.to_euler().yaw;
                 }
 
                 double dx = current_state.pose.point.x - result.nearest_point.x;
@@ -397,10 +397,10 @@ namespace drivekit {
                 result.heading_error =
                     normalize_angle(current_state.pose.rotation.to_euler().yaw - result.path_heading);
 
-                if (nearest_idx > 0 && nearest_idx < path_.drivekits.size() - 1) {
-                    Point prev = path_.drivekits[nearest_idx - 1].point;
-                    Point curr = path_.drivekits[nearest_idx].point;
-                    Point next = path_.drivekits[nearest_idx + 1].point;
+                if (nearest_idx > 0 && nearest_idx < path_.ondrives.size() - 1) {
+                    Point prev = path_.ondrives[nearest_idx - 1].point;
+                    Point curr = path_.ondrives[nearest_idx].point;
+                    Point next = path_.ondrives[nearest_idx + 1].point;
 
                     double heading1 = std::atan2(curr.y - prev.y, curr.x - prev.x);
                     double heading2 = std::atan2(next.y - curr.y, next.x - curr.x);
@@ -417,4 +417,4 @@ namespace drivekit {
         };
 
     } // namespace path
-} // namespace drivekit
+} // namespace ondrive

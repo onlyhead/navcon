@@ -6,7 +6,7 @@
 #include "../point/carrot.hpp"
 #include "../point/pid.hpp"
 
-#include "drivekit/types.hpp"
+#include "ondrive/types.hpp"
 #include <array>
 #include <cmath>
 #include <memory>
@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-namespace drivekit {
+namespace ondrive {
     namespace visualize {
 
         // Color palette for visualization
@@ -36,11 +36,11 @@ namespace drivekit {
         /// Show a single path
         inline void show_path(std::shared_ptr<rerun::RecordingStream> rec, const Path &path,
                               const std::string &entity_path = "path", const rerun::Color &color = {0, 255, 0}) {
-            if (path.drivekits.empty()) return;
+            if (path.ondrives.empty()) return;
 
             std::vector<rerun::Position3D> positions;
-            for (const auto &drivekit : path.drivekits) {
-                positions.emplace_back(drivekit.point.x, drivekit.point.y, 0.0f);
+            for (const auto &ondrive : path.ondrives) {
+                positions.emplace_back(ondrive.point.x, ondrive.point.y, 0.0f);
             }
 
             if (!positions.empty()) {
@@ -135,6 +135,6 @@ namespace drivekit {
         }
 
     } // namespace visualize
-} // namespace drivekit
+} // namespace ondrive
 
 #endif // HAS_RERUN

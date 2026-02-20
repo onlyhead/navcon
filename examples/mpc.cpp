@@ -1,5 +1,5 @@
-#include "drivekit.hpp"
-#include "drivekit/utils/visualize.hpp"
+#include "ondrive.hpp"
+#include "ondrive/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -18,7 +18,7 @@ namespace {
 } // namespace
 
 int main() {
-    auto rec = std::make_shared<rerun::RecordingStream>("drivekit_mpc_demo", "mpc");
+    auto rec = std::make_shared<rerun::RecordingStream>("ondrive_mpc_demo", "mpc");
     if (rec->connect_grpc("rerun+http://0.0.0.0:9876/proxy").is_err()) {
         std::cerr << "Failed to connect to rerun\n";
         return 1;
@@ -29,10 +29,10 @@ int main() {
 
     std::cout << "Visualization initialized for MPC demo\n";
 
-    drivekit::Tracker navigator(drivekit::TrackerType::MPC);
+    ondrive::Tracker navigator(ondrive::TrackerType::MPC);
 
     // Get and configure MPC parameters
-    auto mpc_controller = dynamic_cast<drivekit::pred::MPCFollower *>(navigator.get_controller());
+    auto mpc_controller = dynamic_cast<ondrive::pred::MPCFollower *>(navigator.get_controller());
     if (mpc_controller) {
         auto mpc_config = mpc_controller->get_mpc_config();
         mpc_config.horizon_steps = 10;              // Prediction horizon
@@ -51,7 +51,7 @@ int main() {
         std::cout << "MPC configuration set: horizon={}, dt={}, ref_vel={}\n";
     }
 
-    drivekit::RobotConstraints constraints;
+    ondrive::RobotConstraints constraints;
     constraints.max_linear_velocity = 2.0;
     constraints.max_angular_velocity = 1.5;
     constraints.max_linear_acceleration = 1.0;
@@ -60,7 +60,7 @@ int main() {
 
     navigator.init(constraints, rec);
 
-    drivekit::PathGoal path_goal(build_s_shape_path(),
+    ondrive::PathGoal path_goal(build_s_shape_path(),
                                  0.5f, // tolerance
                                  1.0f, // max speed
                                  false);
@@ -68,7 +68,7 @@ int main() {
     navigator.set_path(path_goal);
     navigator.smoothen(25.0f); // Smooth interpolation
 
-    drivekit::RobotState robot_state;
+    ondrive::RobotState robot_state;
     robot_state.pose.point = datapod::Point{0.0, 0.0}; // Start on path
     robot_state.pose.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
     robot_state.velocity.linear = 0.0;
@@ -122,7 +122,7 @@ int main() {
             current_time += dt;
 
             // Visualize
-            drivekit::visualize::show_robot_state(rec, robot_state, "robot_mpc",
+            ondrive::visualize::show_robot_state(rec, robot_state, "robot_mpc",
                                                   rerun::Color(0, 191, 255)); // Deep sky blue color
             navigator.tock();
 

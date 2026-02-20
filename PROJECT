@@ -18,14 +18,14 @@
 # Lines starting with # are comments
 # ==============================================================================
 
-drivekit
+ondrive
 0.0.6
 
 [lib]
 echo|https://github.com/bresilla/echo.git|0.0.25
 datapod|https://github.com/robolibs/datapod.git|0.0.41
 optinum|https://github.com/robolibs/optinum.git|0.0.18
-bonsai|https://github.com/robolibs/bonsai.git|0.0.2
+stateup|https://github.com/robolibs/stateup.git|0.0.3
 
 [example]
 pkg::rerun_sdk

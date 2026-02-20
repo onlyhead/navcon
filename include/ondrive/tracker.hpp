@@ -1,17 +1,17 @@
 #pragma once
 
 #include "datapod/spatial.hpp"
-#include "drivekit/controller.hpp"
-#include "drivekit/path/lqr.hpp"
-#include "drivekit/path/pure_pursuit.hpp"
-#include "drivekit/path/stanley.hpp"
-#include "drivekit/point/carrot.hpp"
-#include "drivekit/point/pid.hpp"
-#include "drivekit/pred/mca.hpp"
-#include "drivekit/pred/mpc.hpp"
-#include "drivekit/pred/mppi.hpp"
-#include "drivekit/pred/soc.hpp"
-#include "drivekit/types.hpp"
+#include "ondrive/controller.hpp"
+#include "ondrive/path/lqr.hpp"
+#include "ondrive/path/pure_pursuit.hpp"
+#include "ondrive/path/stanley.hpp"
+#include "ondrive/point/carrot.hpp"
+#include "ondrive/point/pid.hpp"
+#include "ondrive/pred/mca.hpp"
+#include "ondrive/pred/mpc.hpp"
+#include "ondrive/pred/mppi.hpp"
+#include "ondrive/pred/soc.hpp"
+#include "ondrive/types.hpp"
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -28,7 +28,7 @@ namespace rerun {
 }
 #endif
 
-namespace drivekit {
+namespace ondrive {
 
     /// Navigation goal for point-to-point navigation.
     struct NavigationGoal {
@@ -42,13 +42,13 @@ namespace drivekit {
 
     /// Path goal for waypoint-based navigation.
     struct PathGoal {
-        std::vector<datapod::Point> drivekits;
+        std::vector<datapod::Point> ondrives;
         float tolerance = 1.0f; // meters
         float max_speed = 1.0f; // m/s
         bool loop = false;      // whether to loop back to start
 
         inline PathGoal(std::vector<datapod::Point> wp, float tol = 1.0f, float speed = 1.0f, bool l = false)
-            : drivekits(std::move(wp)), tolerance(tol), max_speed(speed), loop(l) {}
+            : ondrives(std::move(wp)), tolerance(tol), max_speed(speed), loop(l) {}
     };
 
     /// Controller types for tracking.
@@ -64,7 +64,7 @@ namespace drivekit {
         // Current navigation state
         std::optional<NavigationGoal> current_goal;
         std::optional<PathGoal> current_path;
-        size_t current_drivekit_index = 0;
+        size_t current_ondrive_index = 0;
         bool goal_reached = false;
         bool path_completed = false;
 
@@ -141,22 +141,22 @@ namespace drivekit {
         inline void set_path(const PathGoal &path) {
             current_path = path;
             current_goal.reset();
-            current_drivekit_index = 0;
+            current_ondrive_index = 0;
             goal_reached = false;
             path_completed = false;
 
-            // Convert PathGoal to drivekit::Path and set it in the controller
-            Path drivekit_path;
-            for (const auto &drivekit : path.drivekits) {
+            // Convert PathGoal to ondrive::Path and set it in the controller
+            Path ondrive_path;
+            for (const auto &ondrive : path.ondrives) {
                 Pose wp;
-                wp.point = drivekit;
+                wp.point = ondrive;
                 wp.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
-                drivekit_path.drivekits.push_back(wp);
+                ondrive_path.ondrives.push_back(wp);
             }
-            drivekit_path.is_closed = path.loop;
+            ondrive_path.is_closed = path.loop;
 
             if (controller) {
-                controller->set_path(drivekit_path);
+                controller->set_path(ondrive_path);
             }
         }
 
@@ -169,7 +169,7 @@ namespace drivekit {
         /// Clear the current path.
         inline void clear_path() {
             current_path.reset();
-            current_drivekit_index = 0;
+            current_ondrive_index = 0;
             path_completed = false;
 
             Path empty_path;
@@ -202,11 +202,11 @@ namespace drivekit {
                 return cmd;
             }
 
-            // Update drivekit progress for path following
+            // Update ondrive progress for path following
             // Only for point-based controllers (PID, CARROT) that don't manage their own path index
             if (current_path.has_value() &&
                 (controller_type == TrackerType::PID || controller_type == TrackerType::CARROT)) {
-                update_drivekit_progress(current_state);
+                update_ondrive_progress(current_state);
             }
 
             // If the path has been completed, output a zero-velocity command
@@ -224,9 +224,9 @@ namespace drivekit {
                        controller_type == TrackerType::LQR || controller_type == TrackerType::MPC ||
                        controller_type == TrackerType::MPC_TRAILER || controller_type == TrackerType::MPPI ||
                        controller_type == TrackerType::SOC || controller_type == TrackerType::MCA) {
-                if (current_path.has_value() && !current_path->drivekits.empty()) {
+                if (current_path.has_value() && !current_path->ondrives.empty()) {
                     goal.target_pose =
-                        datapod::Pose{current_path->drivekits.back(), datapod::Quaternion::from_euler(0.0, 0.0, 0.0)};
+                        datapod::Pose{current_path->ondrives.back(), datapod::Quaternion::from_euler(0.0, 0.0, 0.0)};
                     goal.tolerance_position = current_path->tolerance;
                 }
             }
@@ -254,7 +254,7 @@ namespace drivekit {
                     controller_type == TrackerType::LQR || controller_type == TrackerType::MPC ||
                     controller_type == TrackerType::MPC_TRAILER || controller_type == TrackerType::MPPI ||
                     controller_type == TrackerType::SOC || controller_type == TrackerType::MCA) {
-                    current_drivekit_index = controller->get_path_index();
+                    current_ondrive_index = controller->get_path_index();
 
                     if (controller->get_status().goal_reached) {
                         path_completed = true;
@@ -289,14 +289,14 @@ namespace drivekit {
         inline float get_distance_to_goal() const { return std::numeric_limits<float>::infinity(); }
 
         /// Get distance to current waypoint.
-        inline float get_distance_to_current_drivekit() const { return std::numeric_limits<float>::infinity(); }
+        inline float get_distance_to_current_ondrive() const { return std::numeric_limits<float>::infinity(); }
 
         /// Get current target point.
         inline datapod::Point get_current_target() const {
             if (current_goal.has_value()) {
                 return current_goal->target;
-            } else if (current_path.has_value() && current_drivekit_index < current_path->drivekits.size()) {
-                return current_path->drivekits[current_drivekit_index];
+            } else if (current_path.has_value() && current_ondrive_index < current_path->ondrives.size()) {
+                return current_path->ondrives[current_ondrive_index];
             }
             return datapod::Point{0, 0};
         }
@@ -309,18 +309,18 @@ namespace drivekit {
 
         /// Smoothen path by adding interpolated points between waypoints.
         inline void smoothen(float interval_cm = 100.0f) {
-            if (!current_path.has_value() || current_path->drivekits.size() < 2) {
+            if (!current_path.has_value() || current_path->ondrives.size() < 2) {
                 return;
             }
 
             float interval_m = interval_cm / 100.0f;
-            std::vector<datapod::Point> smoothed_drivekits;
+            std::vector<datapod::Point> smoothed_ondrives;
 
-            smoothed_drivekits.push_back(current_path->drivekits[0]);
+            smoothed_ondrives.push_back(current_path->ondrives[0]);
 
-            for (size_t i = 0; i < current_path->drivekits.size() - 1; ++i) {
-                const auto &start = current_path->drivekits[i];
-                const auto &end = current_path->drivekits[i + 1];
+            for (size_t i = 0; i < current_path->ondrives.size() - 1; ++i) {
+                const auto &start = current_path->ondrives[i];
+                const auto &end = current_path->ondrives[i + 1];
 
                 float dx = end.x - start.x;
                 float dy = end.y - start.y;
@@ -333,29 +333,29 @@ namespace drivekit {
                     datapod::Point interpolated;
                     interpolated.x = start.x + t * dx;
                     interpolated.y = start.y + t * dy;
-                    smoothed_drivekits.push_back(interpolated);
+                    smoothed_ondrives.push_back(interpolated);
                 }
 
-                smoothed_drivekits.push_back(end);
+                smoothed_ondrives.push_back(end);
             }
 
-            current_path->drivekits = smoothed_drivekits;
-            current_drivekit_index = 0;
+            current_path->ondrives = smoothed_ondrives;
+            current_ondrive_index = 0;
 
-            std::cout << "Path smoothened: " << smoothed_drivekits.size() << " drivekits (interval: " << interval_cm
+            std::cout << "Path smoothened: " << smoothed_ondrives.size() << " ondrives (interval: " << interval_cm
                       << "cm)" << std::endl;
 
-            Path drivekit_path;
-            for (const auto &drivekit : current_path->drivekits) {
+            Path ondrive_path;
+            for (const auto &ondrive : current_path->ondrives) {
                 Pose wp;
-                wp.point = drivekit;
+                wp.point = ondrive;
                 wp.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
-                drivekit_path.drivekits.push_back(wp);
+                ondrive_path.ondrives.push_back(wp);
             }
-            drivekit_path.is_closed = current_path->loop;
+            ondrive_path.is_closed = current_path->loop;
 
             if (controller) {
-                controller->set_path(drivekit_path);
+                controller->set_path(ondrive_path);
             }
         }
 
@@ -371,10 +371,10 @@ namespace drivekit {
             }
 
             // Visualize current path
-            if (current_path.has_value() && !current_path->drivekits.empty()) {
+            if (current_path.has_value() && !current_path->ondrives.empty()) {
                 std::vector<std::array<float, 3>> path_points;
-                for (const auto &drivekit : current_path->drivekits) {
-                    path_points.push_back({static_cast<float>(drivekit.x), static_cast<float>(drivekit.y), 0});
+                for (const auto &ondrive : current_path->ondrives) {
+                    path_points.push_back({static_cast<float>(ondrive.x), static_cast<float>(ondrive.y), 0});
                 }
 
                 if (path_points.size() >= 2) {
@@ -384,19 +384,19 @@ namespace drivekit {
                         rerun::LineStrips3D(path_line).with_colors({{0, 255, 0, 128}}).with_radii({{0.05f}}));
                 }
 
-                std::vector<rerun::components::Position3D> drivekit_positions;
-                for (const auto &drivekit : current_path->drivekits) {
-                    drivekit_positions.push_back({static_cast<float>(drivekit.x), static_cast<float>(drivekit.y), 0});
+                std::vector<rerun::components::Position3D> ondrive_positions;
+                for (const auto &ondrive : current_path->ondrives) {
+                    ondrive_positions.push_back({static_cast<float>(ondrive.x), static_cast<float>(ondrive.y), 0});
                 }
 
-                if (!drivekit_positions.empty()) {
+                if (!ondrive_positions.empty()) {
                     rec->log_static(
-                        entity_prefix + "/drivekits",
-                        rerun::Points3D(drivekit_positions).with_colors({{0, 255, 0}}).with_radii({{0.07f}}));
+                        entity_prefix + "/ondrives",
+                        rerun::Points3D(ondrive_positions).with_colors({{0, 255, 0}}).with_radii({{0.07f}}));
                 }
 
-                if (current_drivekit_index < current_path->drivekits.size()) {
-                    const auto &current_target = current_path->drivekits[current_drivekit_index];
+                if (current_ondrive_index < current_path->ondrives.size()) {
+                    const auto &current_target = current_path->ondrives[current_ondrive_index];
                     rec->log_static(entity_prefix + "/current_target",
                                     rerun::Points3D({{static_cast<float>(current_target.x),
                                                       static_cast<float>(current_target.y), 0.0f}})
@@ -432,12 +432,12 @@ namespace drivekit {
             }
 
             // Draw line from robot to current target waypoint
-            if (current_path.has_value() && current_drivekit_index < current_path->drivekits.size()) {
-                const auto &target_drivekit = current_path->drivekits[current_drivekit_index];
+            if (current_path.has_value() && current_ondrive_index < current_path->ondrives.size()) {
+                const auto &target_ondrive = current_path->ondrives[current_ondrive_index];
                 std::vector<std::array<float, 3>> target_line = {
                     {static_cast<float>(current_state_.pose.point.x), static_cast<float>(current_state_.pose.point.y),
                      0.2f},
-                    {static_cast<float>(target_drivekit.x), static_cast<float>(target_drivekit.y), 0}};
+                    {static_cast<float>(target_ondrive.x), static_cast<float>(target_ondrive.y), 0}};
 
                 auto target_strip = rerun::components::LineStrip3D(target_line);
                 rec->log_static(
@@ -457,8 +457,8 @@ namespace drivekit {
             if (current_goal.has_value()) {
                 goal.target_pose = datapod::Pose{current_goal->target, datapod::Quaternion::from_euler(0.0, 0.0, 0.0)};
                 goal.tolerance_position = current_goal->tolerance;
-            } else if (current_path.has_value() && current_drivekit_index < current_path->drivekits.size()) {
-                goal.target_pose = datapod::Pose{current_path->drivekits[current_drivekit_index],
+            } else if (current_path.has_value() && current_ondrive_index < current_path->ondrives.size()) {
+                goal.target_pose = datapod::Pose{current_path->ondrives[current_ondrive_index],
                                                  datapod::Quaternion::from_euler(0.0, 0.0, 0.0)};
                 goal.tolerance_position = current_path->tolerance;
             }
@@ -467,31 +467,31 @@ namespace drivekit {
         }
 
         /// Update waypoint progress for point-based controllers.
-        inline void update_drivekit_progress(const RobotState &current_state) {
-            if (!current_path.has_value() || current_drivekit_index >= current_path->drivekits.size()) {
+        inline void update_ondrive_progress(const RobotState &current_state) {
+            if (!current_path.has_value() || current_ondrive_index >= current_path->ondrives.size()) {
                 return;
             }
 
             const datapod::Point &robot_pos = current_state.pose.point;
-            const datapod::Point &current_target = current_path->drivekits[current_drivekit_index];
+            const datapod::Point &current_target = current_path->ondrives[current_ondrive_index];
             float distance =
                 std::sqrt(std::pow(current_target.x - robot_pos.x, 2) + std::pow(current_target.y - robot_pos.y, 2));
 
-            static int drivekit_debug_count = 0;
-            if (drivekit_debug_count % 50 == 0) {
-                std::cout << "WAYPOINT DEBUG: Index=" << current_drivekit_index << ", Robot(" << robot_pos.x << ","
+            static int ondrive_debug_count = 0;
+            if (ondrive_debug_count % 50 == 0) {
+                std::cout << "WAYPOINT DEBUG: Index=" << current_ondrive_index << ", Robot(" << robot_pos.x << ","
                           << robot_pos.y << ")" << ", Target(" << current_target.x << "," << current_target.y << ")"
                           << ", Distance=" << distance << ", Tolerance=" << current_path->tolerance << std::endl;
             }
-            drivekit_debug_count++;
+            ondrive_debug_count++;
 
             if (distance <= current_path->tolerance) {
-                std::cout << "WAYPOINT REACHED! Moving to next drivekit. Index was " << current_drivekit_index;
-                current_drivekit_index++;
+                std::cout << "WAYPOINT REACHED! Moving to next ondrive. Index was " << current_ondrive_index;
+                current_ondrive_index++;
 
-                if (current_drivekit_index >= current_path->drivekits.size()) {
-                    if (current_path->loop && !current_path->drivekits.empty()) {
-                        current_drivekit_index = 0;
+                if (current_ondrive_index >= current_path->ondrives.size()) {
+                    if (current_path->loop && !current_path->ondrives.empty()) {
+                        current_ondrive_index = 0;
                     } else {
                         path_completed = true;
                     }
@@ -595,10 +595,10 @@ namespace drivekit {
                 goal_reached = distance <= current_goal->tolerance;
             }
 
-            if (current_path.has_value() && current_drivekit_index >= current_path->drivekits.size()) {
+            if (current_path.has_value() && current_ondrive_index >= current_path->ondrives.size()) {
                 path_completed = true;
             }
         }
     };
 
-} // namespace drivekit
+} // namespace ondrive

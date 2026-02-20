@@ -1,14 +1,14 @@
 #pragma once
 
-#include "drivekit/pred/mppi.hpp"
-#include "drivekit/types.hpp"
+#include "ondrive/pred/mppi.hpp"
+#include "ondrive/types.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <random>
 #include <vector>
 
-namespace drivekit {
+namespace ondrive {
     namespace pred {
 
         /// MCA (Monte Carlo Approximation) controller - DRA-MPPI.
@@ -140,7 +140,7 @@ namespace drivekit {
                 VelocityCommand cmd;
                 cmd.valid = false;
 
-                if (path_.drivekits.empty()) {
+                if (path_.ondrives.empty()) {
                     cmd.status_message = "No path set for MCA";
                     return cmd;
                 }
@@ -151,23 +151,23 @@ namespace drivekit {
                 Point nearest_point{};
                 double path_heading = 0.0;
 
-                for (size_t i = path_index_; i < path_.drivekits.size(); ++i) {
-                    double dist = current_state.pose.point.distance_to(path_.drivekits[i].point);
+                for (size_t i = path_index_; i < path_.ondrives.size(); ++i) {
+                    double dist = current_state.pose.point.distance_to(path_.ondrives[i].point);
                     if (dist < min_distance) {
                         min_distance = dist;
                         nearest_idx = i;
-                        nearest_point = path_.drivekits[i].point;
+                        nearest_point = path_.ondrives[i].point;
                     }
                     if (i > path_index_ && dist > min_distance * 1.5) {
                         break;
                     }
                 }
 
-                if (nearest_idx < path_.drivekits.size() - 1) {
-                    Point next_point = path_.drivekits[nearest_idx + 1].point;
+                if (nearest_idx < path_.ondrives.size() - 1) {
+                    Point next_point = path_.ondrives[nearest_idx + 1].point;
                     path_heading = std::atan2(next_point.y - nearest_point.y, next_point.x - nearest_point.x);
                 } else {
-                    path_heading = path_.drivekits[nearest_idx].rotation.to_euler().yaw;
+                    path_heading = path_.ondrives[nearest_idx].rotation.to_euler().yaw;
                 }
 
                 double dx = current_state.pose.point.x - nearest_point.x;
@@ -203,26 +203,26 @@ namespace drivekit {
                     size_t target_idx = nearest_idx;
                     double accumulated_dist = 0.0;
 
-                    while (target_idx < path_.drivekits.size() - 1 && accumulated_dist < distance_ahead) {
+                    while (target_idx < path_.ondrives.size() - 1 && accumulated_dist < distance_ahead) {
                         accumulated_dist +=
-                            path_.drivekits[target_idx].point.distance_to(path_.drivekits[target_idx + 1].point);
+                            path_.ondrives[target_idx].point.distance_to(path_.ondrives[target_idx + 1].point);
                         if (accumulated_dist < distance_ahead) {
                             target_idx++;
                         }
                     }
 
-                    target_idx = std::min(target_idx, path_.drivekits.size() - 1);
+                    target_idx = std::min(target_idx, path_.ondrives.size() - 1);
 
-                    ref_x.push_back(path_.drivekits[target_idx].point.x);
-                    ref_y.push_back(path_.drivekits[target_idx].point.y);
+                    ref_x.push_back(path_.ondrives[target_idx].point.x);
+                    ref_y.push_back(path_.ondrives[target_idx].point.y);
 
                     double yaw;
-                    if (target_idx < path_.drivekits.size() - 1) {
-                        Point next = path_.drivekits[target_idx + 1].point;
-                        Point curr = path_.drivekits[target_idx].point;
+                    if (target_idx < path_.ondrives.size() - 1) {
+                        Point next = path_.ondrives[target_idx + 1].point;
+                        Point curr = path_.ondrives[target_idx].point;
                         yaw = std::atan2(next.y - curr.y, next.x - curr.x);
                     } else {
-                        yaw = path_.drivekits[target_idx].rotation.to_euler().yaw;
+                        yaw = path_.ondrives[target_idx].rotation.to_euler().yaw;
                     }
                     ref_yaw.push_back(yaw);
                     ref_vel.push_back(ref_velocity);
@@ -398,8 +398,8 @@ namespace drivekit {
 
                 // Calculate distance to end for deceleration
                 double dist_to_end = 0.0;
-                for (size_t j = path_index_; j < path_.drivekits.size() - 1; ++j) {
-                    dist_to_end += path_.drivekits[j].point.distance_to(path_.drivekits[j + 1].point);
+                for (size_t j = path_index_; j < path_.ondrives.size() - 1; ++j) {
+                    dist_to_end += path_.ondrives[j].point.distance_to(path_.ondrives[j + 1].point);
                 }
                 const double decel_distance = 2.0;
                 double effective_ref_velocity = ref_velocity;
@@ -619,4 +619,4 @@ namespace drivekit {
         };
 
     } // namespace pred
-} // namespace drivekit
+} // namespace ondrive

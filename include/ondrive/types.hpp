@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace drivekit {
+namespace ondrive {
 
     // Use Datapod types directly
     using Pose = datapod::Pose;
@@ -46,8 +46,8 @@ namespace drivekit {
 
     // Path specification
     struct Path {
-        std::vector<Pose> drivekits;
-        std::vector<double> speeds; // Optional speed at each drivekit
+        std::vector<Pose> ondrives;
+        std::vector<double> speeds; // Optional speed at each ondrive
         bool is_closed = false;     // Loop back to start
     };
 
@@ -177,4 +177,4 @@ namespace drivekit {
         std::string mode; // e.g., "tracking", "turning", "stopped"
     };
 
-} // namespace drivekit
+} // namespace ondrive

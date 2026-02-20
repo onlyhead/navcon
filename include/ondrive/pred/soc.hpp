@@ -1,12 +1,12 @@
 #pragma once
 
-#include "drivekit/pred/mppi.hpp"
+#include "ondrive/pred/mppi.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <random>
 
-namespace drivekit {
+namespace ondrive {
     namespace pred {
 
         /// SOC (Stochastic Optimal Control) controller - SVG-MPPI.
@@ -65,7 +65,7 @@ namespace drivekit {
                 VelocityCommand cmd;
                 cmd.valid = false;
 
-                if (path_.drivekits.empty()) {
+                if (path_.ondrives.empty()) {
                     cmd.status_message = "No path set for SOC";
                     return cmd;
                 }
@@ -161,7 +161,7 @@ namespace drivekit {
                         v = std::clamp(v, constraints.min_linear_velocity, constraints.max_linear_velocity);
 
                         double min_path_dist = std::numeric_limits<double>::max();
-                        for (const auto &wp : path_.drivekits) {
+                        for (const auto &wp : path_.ondrives) {
                             double dist =
                                 std::sqrt((x - wp.point.x) * (x - wp.point.x) + (y - wp.point.y) * (y - wp.point.y));
                             min_path_dist = std::min(min_path_dist, dist);
@@ -272,7 +272,7 @@ namespace drivekit {
                         v = std::clamp(v, constraints.min_linear_velocity, constraints.max_linear_velocity);
 
                         double min_path_dist = std::numeric_limits<double>::max();
-                        for (const auto &wp : path_.drivekits) {
+                        for (const auto &wp : path_.ondrives) {
                             double dist =
                                 std::sqrt((x - wp.point.x) * (x - wp.point.x) + (y - wp.point.y) * (y - wp.point.y));
                             min_path_dist = std::min(min_path_dist, dist);
@@ -336,8 +336,8 @@ namespace drivekit {
 
                 // Calculate distance to end for deceleration
                 double dist_to_end = 0.0;
-                for (size_t j = path_index_; j < path_.drivekits.size() - 1; ++j) {
-                    dist_to_end += path_.drivekits[j].point.distance_to(path_.drivekits[j + 1].point);
+                for (size_t j = path_index_; j < path_.ondrives.size() - 1; ++j) {
+                    dist_to_end += path_.ondrives[j].point.distance_to(path_.ondrives[j + 1].point);
                 }
                 const double decel_distance = 2.0;
                 double effective_ref_velocity = active_config.ref_velocity;
@@ -450,4 +450,4 @@ namespace drivekit {
         };
 
     } // namespace pred
-} // namespace drivekit
+} // namespace ondrive

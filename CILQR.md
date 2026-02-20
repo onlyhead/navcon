@@ -394,12 +394,12 @@ Trajectory forward_pass(const Trajectory& traj_old,
 ### File Structure
 
 ```
-include/drivekit/pred/
+include/ondrive/pred/
 ├── dp.hpp           # DP planner header
 ├── cilqr.hpp        # CILQR optimizer header
 └── dp_cilqr.hpp     # Combined coarse-to-fine planner
 
-src/drivekit/pred/
+src/ondrive/pred/
 ├── dp.cpp           # DP implementation
 ├── cilqr.cpp        # CILQR implementation
 └── dp_cilqr.cpp     # Integration
@@ -412,7 +412,7 @@ examples/
 
 ```cpp
 // ============ DP Planner ============
-namespace drivekit::pred {
+namespace ondrive::pred {
 
 struct DPConfig {
     double s_resolution = 0.5;
@@ -508,7 +508,7 @@ private:
     bool needs_replan(const RobotState& state) const;
 };
 
-} // namespace drivekit::pred
+} // namespace ondrive::pred
 ```
 
 ### Integration with Tracker

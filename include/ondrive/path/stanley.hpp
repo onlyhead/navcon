@@ -1,13 +1,13 @@
 #pragma once
 
-#include "drivekit/controller.hpp"
+#include "ondrive/controller.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <limits>
 #include <tuple>
 
-namespace drivekit {
+namespace ondrive {
     namespace path {
 
         /// Stanley controller for path tracking (Stanford DARPA Grand Challenge).
@@ -32,7 +32,7 @@ namespace drivekit {
                                             constraints.steering_type == SteeringType::SKID_STEER);
 
                 // Check if we have a path
-                bool has_path = !path_.drivekits.empty();
+                bool has_path = !path_.ondrives.empty();
                 if (!has_path) {
                     return compute_goal_control(current_state, goal, constraints);
                 }
@@ -146,11 +146,11 @@ namespace drivekit {
             }
 
             inline void update_path_index(const Pose &current_pose) {
-                if (path_.drivekits.empty()) return;
+                if (path_.ondrives.empty()) return;
 
-                while (path_index_ < path_.drivekits.size() - 1) {
-                    Point current_drivekit = path_.drivekits[path_index_].point;
-                    double dist = current_pose.point.distance_to(current_drivekit);
+                while (path_index_ < path_.ondrives.size() - 1) {
+                    Point current_ondrive = path_.ondrives[path_index_].point;
+                    double dist = current_pose.point.distance_to(current_ondrive);
 
                     if (dist < 1.0) {
                         path_index_++;
@@ -161,34 +161,34 @@ namespace drivekit {
             }
 
             inline std::tuple<Point, double, double> find_closest_path_point(const Pose &current_pose) {
-                if (path_.drivekits.empty()) {
+                if (path_.ondrives.empty()) {
                     return {Point{0, 0}, 0.0, 0.0};
                 }
 
                 size_t search_start = (path_index_ > 5) ? path_index_ - 5 : 0;
-                size_t search_end = std::min(path_index_ + 20, path_.drivekits.size());
+                size_t search_end = std::min(path_index_ + 20, path_.ondrives.size());
 
                 double min_distance = std::numeric_limits<double>::max();
                 size_t closest_idx = path_index_;
 
                 for (size_t i = search_start; i < search_end; ++i) {
-                    double dist = current_pose.point.distance_to(path_.drivekits[i].point);
+                    double dist = current_pose.point.distance_to(path_.ondrives[i].point);
                     if (dist < min_distance) {
                         min_distance = dist;
                         closest_idx = i;
                     }
                 }
 
-                Point closest_point = path_.drivekits[closest_idx].point;
+                Point closest_point = path_.ondrives[closest_idx].point;
 
                 double path_heading = 0.0;
-                if (closest_idx < path_.drivekits.size() - 1) {
-                    Point next_point = path_.drivekits[closest_idx + 1].point;
+                if (closest_idx < path_.ondrives.size() - 1) {
+                    Point next_point = path_.ondrives[closest_idx + 1].point;
                     double dx = next_point.x - closest_point.x;
                     double dy = next_point.y - closest_point.y;
                     path_heading = std::atan2(dy, dx);
                 } else if (closest_idx > 0) {
-                    Point prev_point = path_.drivekits[closest_idx - 1].point;
+                    Point prev_point = path_.ondrives[closest_idx - 1].point;
                     double dx = closest_point.x - prev_point.x;
                     double dy = closest_point.y - prev_point.y;
                     path_heading = std::atan2(dy, dx);
@@ -209,4 +209,4 @@ namespace drivekit {
         };
 
     } // namespace path
-} // namespace drivekit
+} // namespace ondrive

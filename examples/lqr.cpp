@@ -1,5 +1,5 @@
-#include "drivekit.hpp"
-#include "drivekit/utils/visualize.hpp"
+#include "ondrive.hpp"
+#include "ondrive/utils/visualize.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -18,7 +18,7 @@ namespace {
 } // namespace
 
 int main() {
-    auto rec = std::make_shared<rerun::RecordingStream>("drivekit_lqr_demo", "lqr");
+    auto rec = std::make_shared<rerun::RecordingStream>("ondrive_lqr_demo", "lqr");
     if (rec->connect_grpc("rerun+http://0.0.0.0:9876/proxy").is_err()) {
         std::cerr << "Failed to connect to rerun\n";
         return 1;
@@ -29,13 +29,13 @@ int main() {
 
     std::cout << "Visualization initialized for LQR demo\n";
 
-    drivekit::Tracker navigator(drivekit::TrackerType::LQR);
+    ondrive::Tracker navigator(ondrive::TrackerType::LQR);
 
     auto params = navigator.get_controller_params();
     params.lookahead_distance = 2.5f;
     navigator.set_controller_params(params);
 
-    drivekit::RobotConstraints constraints;
+    ondrive::RobotConstraints constraints;
     constraints.max_linear_velocity = 1.0;
     constraints.max_angular_velocity = 1.0;
     constraints.wheelbase = 0.5;
@@ -43,7 +43,7 @@ int main() {
 
     navigator.init(constraints, rec);
 
-    drivekit::PathGoal path_goal(build_s_shape_path(),
+    ondrive::PathGoal path_goal(build_s_shape_path(),
                                  0.5f, // tolerance
                                  0.8f, // max speed
                                  false);
@@ -51,7 +51,7 @@ int main() {
     navigator.set_path(path_goal);
     navigator.smoothen(25.0f); // Smooth interpolation
 
-    drivekit::RobotState robot_state;
+    ondrive::RobotState robot_state;
     robot_state.pose.point = datapod::Point{0.0, 0.0}; // Start on path
     robot_state.pose.rotation = datapod::Quaternion::from_euler(0.0, 0.0, 0.0);
     robot_state.velocity.linear = 0.0;
@@ -100,7 +100,7 @@ int main() {
             current_time += dt;
 
             // Visualize
-            drivekit::visualize::show_robot_state(rec, robot_state, "robot_lqr",
+            ondrive::visualize::show_robot_state(rec, robot_state, "robot_lqr",
                                                   rerun::Color(255, 165, 0)); // Orange color
             navigator.tock();
 

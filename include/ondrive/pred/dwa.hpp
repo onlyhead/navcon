@@ -1,9 +1,9 @@
 #pragma once
 
-#include "drivekit/controller.hpp"
+#include "ondrive/controller.hpp"
 #include <vector>
 
-namespace drivekit {
+namespace ondrive {
     namespace pred {
 
         /// DWA (Dynamic Window Approach) - Fast reactive local planner.
@@ -54,4 +54,4 @@ namespace drivekit {
         };
 
     } // namespace pred
-} // namespace drivekit
+} // namespace ondrive

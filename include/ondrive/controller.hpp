@@ -1,10 +1,10 @@
 #pragma once
 
-#include "drivekit/types.hpp"
+#include "ondrive/types.hpp"
 #include <cmath>
 #include <memory>
 
-namespace drivekit {
+namespace ondrive {
 
     /// Abstract base controller interface for all path/point following controllers.
     class Controller {
@@ -30,7 +30,7 @@ namespace drivekit {
 
         /// Reset controller state.
         virtual void reset() {
-            path_.drivekits.clear();
+            path_.ondrives.clear();
             path_index_ = 0;
             status_ = ControllerStatus{};
         }
@@ -89,4 +89,4 @@ namespace drivekit {
         }
     };
 
-} // namespace drivekit
+} // namespace ondrive
